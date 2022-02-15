@@ -1,0 +1,163 @@
+---
+title: "APM466A1"
+author: "Shu Wang"
+date: "2022/2/13"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+install.packages("tidyverse")
+install.packages("readr")
+install.packages("readxl")
+
+```
+
+```{r}
+library(tidyverse)
+library(readr)
+library(readxl)
+selected_bonds = read_xlsx("bond_close price.xlsx")
+view(selected_bonds)
+```
+
+```{r}
+selected_bonds <- as.data.frame(selected_bonds)
+```
+
+
+```{r}
+current_day = c(10,11,12,13,14,17,18,19,20,21)
+
+t = 1
+# Calculate each column DP_i for a given t.
+while (t <= 10) {
+  colname_DP = paste("DP", toString(t), sep="")
+  
+  # Calculate column DP_i at day t
+  AI = (4*30 + (current_day[t]))/360 * selected_bonds[["Coupon"]] * 100
+  DP = AI + selected_bonds[[paste("CPd", toString(t), sep="")]]
+  
+  selected_bonds[[colname_DP]] = DP
+  t = t + 1
+}
+
+
+
+
+```
+
+```{r}
+install.packages("jrvFinance")
+```
+
+```{r}
+view(n)
+```
+
+
+
+```{r}
+
+library(jrvFinance)
+# Calculate each column YTM_i for a given day t.
+t = 1
+while(t<=10){
+  colname_YTM = paste("YTM",toString(t),sep="")
+  n = (selected_bonds[["Term(M)"]]+2)/6 + 1
+  
+  # Calculate each element YTM_i,t for bond i at day t.
+  i = 1
+  YTM_t = c()
+  while (i<=10) {
+    cash_flow = c(-selected_bonds[[paste("DP", toString(t), sep="")]][i])
+    pmt_time = c(0)
+    # Create the cash flow and time for bond i at day t.
+    m = 1
+    while (m<=n[i]-1) {
+      cash_flow = append(cash_flow, selected_bonds[["Coupon"]][i]*100/2)
+      pmt_time = append(pmt_time, (60-(current_day[t]-1))/360+1/2)
+      m = m + 1
+    }
+    cash_flow = append(cash_flow, selected_bonds[["Coupon"]][i]*100/2 + 100)
+    pmt_time = append(pmt_time, (60-(current_day[t]-1))/360+(n[i]-1)/2)
+    
+    YTM_it = irr(cf = cash_flow, cf.freq = 2, comp.freq = Inf, cf.t = pmt_time)
+    YTM_t = append(YTM_t, YTM_it)
+    i = i + 1
+ }
+  
+  selected_bonds[[colname_YTM]] = YTM_t
+  t = t + 1
+}
+
+
+
+
+```
+
+
+
+```{r}
+selected_bonds <- tibble::rowid_to_column(selected_bonds, "index")
+```
+
+
+```{r}
+require(tigerstats)
+
+xyplot(YTM1+YTM2+YTM3+YTM4+YTM5+YTM6+YTM7+YTM8+YTM9+YTM10~index,
+       data=selected_bonds,type='l',auto.key=T)
+
+```
+
+```{r}
+# Calculate the column r_i at each day t.
+
+```
+
+  
+ 
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# Time series for yield
+
+
+```{r}
+# Calculate the time series X_i for bond i. 
+i = 1
+X_ytm = c()
+while (i <= 10) {
+  yield_i_j_1 = as.numeric(selected_bonds[i,28:36])
+  yield_i_j = as.numeric(selected_bonds[i,27:35])
+  X_ytm_i = log(yield_i_j_1/yield_i_j)
+  
+  X_ytm = append(X_ytm, X_ytm_i)
+  i = i + 2
+}
+X_ytm = matrix(X_ytm, ncol=5, byrow=FALSE)
+# View(X_ytm)
+M_ytm = cov(X_ytm)
+eigen_space_ytm = eigen(M_ytm) 
+eigen_space_ytm$values
+eigen_space_ytm$vectors
+```
+
+# 6 Eigenvalues and Eigenvectors
+
+```{r}
+M_ytm = cov(X_ytm)
+M_ytm
+```
+
